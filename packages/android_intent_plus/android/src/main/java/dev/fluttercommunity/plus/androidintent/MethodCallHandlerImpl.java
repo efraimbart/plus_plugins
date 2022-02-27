@@ -15,6 +15,7 @@ import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 
 /** Forwards incoming {@link MethodCall}s to {@link IntentSender#send}. */
@@ -22,6 +23,7 @@ public final class MethodCallHandlerImpl implements MethodCallHandler {
   private static final String TAG = "MethodCallHandlerImpl";
   private final IntentSender sender;
   @Nullable private MethodChannel methodChannel;
+  @Nullable private Result pendingResult;
 
   /**
    * Uses the given {@code sender} for all incoming calls.
@@ -92,12 +94,15 @@ public final class MethodCallHandlerImpl implements MethodCallHandler {
             action, flags, category, data, arguments, packageName, componentName, type);
 
     if ("launch".equalsIgnoreCase(call.method)) {
-      sender.send(intent);
+      sender.send(intent, false);
 
       result.success(null);
+    } else if ("launchForResult".equalsIgnoreCase(call.method)) {
+      pendingResult = result;
+      sender.send(intent, true);
     } else if ("launchChooser".equalsIgnoreCase(call.method)) {
       String title = call.argument("chooserTitle");
-      sender.launchChooser(intent, title);
+      sender.launchChooser(intent, title, false);
       result.success(null);
     } else if ("sendBroadcast".equalsIgnoreCase(call.method)) {
       sender.sendBroadcast(intent);
@@ -107,6 +112,18 @@ public final class MethodCallHandlerImpl implements MethodCallHandler {
     } else {
       result.notImplemented();
     }
+  }
+
+  public void result(int resultCode, Intent data) {
+    //TODO: Return dart intent object
+    HashMap<String, Object> map = new HashMap<>();
+    map.put("resultCode", (Object)resultCode);
+    if (data != null) {
+      map.put("position", data.getIntExtra("position", 0));
+      map.put("end_by", data.getStringExtra("end_by"));
+    }
+
+    pendingResult.success(map);
   }
 
   private static String convertAction(String action) {

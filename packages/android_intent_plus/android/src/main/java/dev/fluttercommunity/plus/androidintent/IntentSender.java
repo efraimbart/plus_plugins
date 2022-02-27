@@ -17,6 +17,7 @@ public final class IntentSender {
 
   @Nullable private Activity activity;
   @Nullable private Context applicationContext;
+  @Nullable private MethodCallHandlerImpl methodCallHandlerImpl;
 
   /**
    * Caches the given {@code activity} and {@code applicationContext} to use for sending intents
@@ -43,7 +44,7 @@ public final class IntentSender {
    * back to {@code applicationContext} and adds {@link Intent#FLAG_ACTIVITY_NEW_TASK} to the intent
    * before launching it.
    */
-  void send(Intent intent) {
+  void send(Intent intent, boolean forResult) {
     if (applicationContext == null) {
       Log.wtf(TAG, "Trying to send an intent before the applicationContext was initialized.");
       return;
@@ -52,8 +53,14 @@ public final class IntentSender {
     Log.v(TAG, "Sending intent " + intent);
 
     if (activity != null) {
-      activity.startActivity(intent);
+
+      if (forResult) {
+        activity.startActivityForResult(intent, 12345);
+      } else {
+        activity.startActivity(intent);
+      }
     } else {
+      //TODO: Deal with this case
       intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
       applicationContext.startActivity(intent);
     }
@@ -63,8 +70,8 @@ public final class IntentSender {
    * Like with {@code send}, creates and launches an intent with the given params, but wraps the
    * {@code Intent} with {@code Intent.createChooser}.
    */
-  public void launchChooser(Intent intent, String title) {
-    send(Intent.createChooser(intent, title));
+  public void launchChooser(Intent intent, String title, boolean forResult) {
+    send(Intent.createChooser(intent, title), forResult);
   }
 
   /** Creates an intent and sends it as Broadcast. */
@@ -109,6 +116,10 @@ public final class IntentSender {
   /** Caches the given {@code applicationContext} to use for {@link #send}. */
   void setApplicationContext(@Nullable Context applicationContext) {
     this.applicationContext = applicationContext;
+  }
+
+  void setMethodCallHandlerImpl(@Nullable MethodCallHandlerImpl methodCallHandlerImpl) {
+    this.methodCallHandlerImpl = methodCallHandlerImpl;
   }
 
   /**

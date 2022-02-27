@@ -150,6 +150,14 @@ class AndroidIntent {
     await _channel.invokeMethod<void>('launch', _buildArguments());
   }
 
+  Future<Map<dynamic, dynamic>?> launchForResult() async {
+    if (!_platform.isAndroid) {
+      return null;
+    }
+
+    return await _channel.invokeMethod<Map<dynamic, dynamic>>('launchForResult', _buildArguments());
+  }
+
   /// Launch the intent with 'createChooser(intent, title)'.
   ///
   /// This works only on Android platforms.
